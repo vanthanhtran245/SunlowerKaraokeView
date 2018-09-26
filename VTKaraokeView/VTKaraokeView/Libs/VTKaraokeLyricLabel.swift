@@ -13,7 +13,11 @@ protocol VTXKaraokeLyricViewDelegate:class {
     func karaokeLyric(label: VTKaraokeLyricLabel, didStopAnimation: CAAnimation, finished: Bool)
 }
 
-
+extension VTKaraokeLyricLabel{
+    var hasAnimation: Bool {
+        return textLayer.animation(forKey: animationKey) != nil
+    }
+}
 final class VTKaraokeLyricLabel: UILabel {
     
     weak var delegate:VTXKaraokeLyricViewDelegate?
@@ -79,36 +83,28 @@ final class VTKaraokeLyricLabel: UILabel {
     
     func prepareForLyricLabel() {
         textLayer.removeFromSuperlayer()
-        
         textLayer = CATextLayer()
         textLayer.frame = self.bounds
-        
-        self.numberOfLines = 1
-        self.clipsToBounds = true
-        self.textAlignment = .left
-        self.baselineAdjustment = .alignBaselines
-        
+        numberOfLines = 1
+        clipsToBounds = true
+        textAlignment = .left
+        baselineAdjustment = .alignBaselines
         textLayer.foregroundColor = fillTextColor?.cgColor ?? UIColor.blue.cgColor
-        
         let textFont = self.font
         textLayer.font      = textFont
         textLayer.fontSize  = textFont?.pointSize ?? 13
         textLayer.string    = self.text
         textLayer.contentsScale = UIScreen.main.scale
         textLayer.masksToBounds = true
-        
         textLayer.anchorPoint   = CGPoint(x: 0, y: 0.5)
         textLayer.frame         = self.bounds
         textLayer.isHidden        = true
         self.layer.addSublayer(textLayer)
     }
-    
-    
-    
+
     // MARK: Animation
     func animationForTextLayer() -> CAKeyframeAnimation {
         textLayer.isHidden = false
-        
         let textAnim = CAKeyframeAnimation(keyPath: "bounds.size.width")
         textAnim.duration   = CFTimeInterval(self.duration)
         textAnim.values     = valuesFromLyricSegment()
@@ -116,47 +112,40 @@ final class VTKaraokeLyricLabel: UILabel {
         textAnim.timingFunctions = [CAMediaTimingFunction(name: CAMediaTimingFunctionName.linear)]
         textAnim.isRemovedOnCompletion   = true
         textAnim.delegate              = self
-        
         return textAnim
     }
     
     // MARK: Help methods
     
     func updateLayer() {
-        self.sizeToFit()
-        self.setNeedsLayout()
-        self.prepareForLyricLabel()
+        sizeToFit()
+        setNeedsLayout()
+        prepareForLyricLabel()
     }
     
     
     func valuesFromLyricSegment() -> Array<CGFloat> {
         let layerWidth = textLayer.bounds.size.width
-        
         guard let lyricSegment = self.lyricSegment else {
             return [0.0,layerWidth]
         }
-        
         var values:Array<CGFloat> = [0.0]
         let sortedKeys = Array(lyricSegment.keys).sorted(by: < )
-        
         var val:CGFloat = 0
-        for k in sortedKeys {
-            let str = lyricSegment[k]!
+        sortedKeys.forEach({
+            let str = lyricSegment[$0]!
             let strWidth = str.size(withAttributes: [NSAttributedString.Key.font:self.font]).width
             val += strWidth
             values.append(val)
-        }
-        
+        })
         return values
     }
     
     
     func keyTimesFromLyricSegment() -> Array<CGFloat> {
-        
         guard let lyricSegment = self.lyricSegment else {
             return [0.0, 1.0]
         }
-        
         let keyTimes:Array<CGFloat> = [0.0] + Array(lyricSegment.keys).sorted(by: < ) + [1.0]
         return keyTimes
     }
@@ -178,56 +167,33 @@ final class VTKaraokeLyricLabel: UILabel {
     // MARK: Main methods
     
     func startAnimation() {
-        guard let _ = textLayer.animation(forKey: animationKey) else {
-            
-            let anim = self.animationForTextLayer()
-            textLayer.add(anim, forKey: animationKey)
-            
-            return
-        }
+        guard !hasAnimation else { return }
+        let anim = animationForTextLayer()
+        textLayer.add(anim, forKey: animationKey)
     }
     
     func pauseAnimation() {
-        guard let _ = textLayer.animation(forKey: animationKey) else {
-            return
-        }
-        
-        self.pauseLayer()
+        guard hasAnimation else { return }
+        pauseLayer()
     }
     
     func resumeAnimation() {
-        guard let _ = textLayer.animation(forKey: animationKey) else {
-            return
-        }
-        
-        self.resumeLayer()
+        guard hasAnimation else { return }
+        resumeLayer()
     }
     
     func reset() {
         textLayer.removeAnimation(forKey: animationKey)
         textLayer.isHidden = true
     }
-    
-    // MARK: Delegate
-    
-  
-    
-    /*
-    // Only override drawRect: if you perform custom drawing.
-    // An empty implementation adversely affects performance during animation.
-    override func drawRect(rect: CGRect) {
-        // Drawing code
-    }
-    */
-
 }
 
 extension VTKaraokeLyricLabel: CAAnimationDelegate {
     func animationDidStart(_ anim: CAAnimation) {
-        self.delegate?.karaokeLyric(label: self, didStartAnimation: anim)
+        delegate?.karaokeLyric(label: self, didStartAnimation: anim)
     }
     
     func animationDidStop(_ anim: CAAnimation, finished flag: Bool) {
-        self.delegate?.karaokeLyric(label: self, didStopAnimation: anim, finished: flag)
+        delegate?.karaokeLyric(label: self, didStopAnimation: anim, finished: flag)
     }
 }

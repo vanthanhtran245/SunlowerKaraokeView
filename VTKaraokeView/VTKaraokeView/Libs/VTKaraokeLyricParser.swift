@@ -28,7 +28,6 @@ extension VTKaraokeLyricParser {
     
     func timeStr2Float(strTime: String) -> CGFloat {
         var result:CGFloat = 0
-        
         let timeParts = strTime.components(separatedBy: ":")
         if timeParts.count > 1 {
             let min = Double(timeParts[0]) ?? 0
@@ -44,28 +43,15 @@ extension VTKaraokeLyricParser {
 
 struct VTBasicKaraokeLyricParser:VTKaraokeLyricParser {
     //var lyricContent:String?
-    
     func lyricFromLRCString(lrcStr: String) -> VTKaraokeLyric {
-        
         let lyricRows = lrcStr.components(separatedBy: NSCharacterSet.newlines)
         var lyricDict:Dictionary<CGFloat,String> = Dictionary<CGFloat,String>()
-        
-        
         var title:String = "", artist = "", album = "", by = ""
-        
         for row in lyricRows {
-            
             if row.hasPrefix("[") {
-                
                 if row.hasPrefix("[ti:") || row.hasPrefix("[ar:") || row.hasPrefix("[al:") || row.hasPrefix("[by:") {
-                    
-                    let text = row.substring(
-                        with: row.index(row.startIndex, offsetBy: 5) ..< row.index(row.endIndex, offsetBy: -2)
-                    )
-                    
-                    switch row.substring(
-                        with: row.index(row.startIndex, offsetBy: 1) ..< row.index(row.startIndex, offsetBy: 1)
-                    ) {
+                    let text = String(row[row.index(row.startIndex, offsetBy: 5) ..< row.index(row.endIndex, offsetBy: -2)])
+                    switch row[row.index(row.startIndex, offsetBy: 1) ..< row.index(row.startIndex, offsetBy: 1)] {
                         case "ti":
                             title       = text
                         case "ar":
@@ -77,7 +63,6 @@ struct VTBasicKaraokeLyricParser:VTKaraokeLyricParser {
                         default:
                             print("Unknow text")
                     }
-                    
                 } else {
                     let textParts = row.components( separatedBy: NSCharacterSet(charactersIn:"[]") as CharacterSet)
                     let lyricText = textParts[2];
@@ -86,7 +71,6 @@ struct VTBasicKaraokeLyricParser:VTKaraokeLyricParser {
                 }
             }
         }
-        
         var lyric = VTKaraokeLyric(title: title, singer: artist, composer: by, album: album)
         lyric.content = lyricDict
         return lyric
